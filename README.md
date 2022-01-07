@@ -249,12 +249,12 @@ void save_temp(void)
 
 void inc_temp(void) ////////temperatura
 {
-  temp++;
+  tempe++;
 }
 
 void dec_temp(void)
 {
-  temp--;
+  tempe--;
 }
 
 void inc_timpi(void)///////////timp incalzire
