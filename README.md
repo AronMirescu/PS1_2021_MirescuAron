@@ -1,5 +1,6 @@
 # PS1_2021_MirescuAron
 
+
 #include <LiquidCrystal.h>
 ///tema3
 #define BUTTON_OK 6
@@ -40,13 +41,22 @@ int timpi = 0;
 int timpm = 0;
 int timpr = 0;
 double tempe = 36.6;
-double kp = 20;
-double ki = 20;
-double kd = 20;
+double kp = 1;
+double ki = 0.1;
+double kd = 0.1;
 float temp_q = 0;
 Menus scroll_menu = MENU_MAIN;
 Menus current_menu =  MENU_MAIN;
 ///tema3///
+///tema4
+ double eroare= 0;
+ double suma_erori= 0;
+ double eroare_anterioara = 0;
+ double derivativa = 0;
+ double dt = 0.1; // timp esantionare
+ double setpoint = 20;
+ double output;
+///team4///
 int temp;
 double realTemp;
 
@@ -107,42 +117,12 @@ void print_menu(enum Menus menu)
     case MENU_MAIN:
     default:
    lcd.print("MENIU T=");
-   temp = analogRead(0);
-  realTemp = (double)temp/1024; //convertire semanl analog in temperatura conform cartii tehnice
-  realTemp *= 5;
-  realTemp -=0.5;
-  realTemp *=100;
-  lcd.setCursor(6, 0);
+   
+  /*lcd.setCursor(6, 0);
   
   lcd.print(realTemp);
   lcd.setCursor(12, 0);
-  lcd.print(String((char)178) + "C");//temperatura curenta
-    
-  lcd.setCursor(0, 1);
-  lcd.print("Ora: ");
-  
-  delay(1000);
-  timp++;
-  
-  if(sec + timp == 60)
-  {
-    timp = 0;
-    sec = 0;
-    min++;
-  }
-  if(min == 60)
-  {
-   min = 0;
-   ora++;
-  }
-  if(ora == 24)
-  {
-    timp = 0;
-  	sec = 0;
-    min = 0;
-    ora = 0;
-  }
-  
+  lcd.print(String((char)178) + "C");//temperatura curenta  
   
   lcd.setCursor(0, 1);
   lcd.print("Ora: ");
@@ -160,7 +140,12 @@ void print_menu(enum Menus menu)
   lcd.print(":");
   
   lcd.setCursor(11, 1);
-  lcd.print(sec + timp);
+  lcd.print(sec + timp);*/
+    
+    ///tema4
+    lcd.setCursor(0, 1);
+    lcd.print(output);
+    ///tema4///
    		break;
   }
   if(current_menu != MENU_MAIN)
@@ -346,6 +331,11 @@ void setup()
     pinMode(9, INPUT);
   digitalWrite(9, LOW); // pull-down
   
+  ///tema4
+  pinMode(10, OUTPUT);
+  digitalWrite(10, LOW);
+  ///tema4///
+  
   /*lcd.begin(16, 2);
   lcd.print("Temp: ");
   
@@ -417,6 +407,37 @@ void loop()
   lcd.setCursor(11, 1);
   lcd.print(sec + timp);*/
   
+  ///tema2
+  temp = analogRead(0);
+  realTemp = (double)temp/1024; //convertire semanl analog in temperatura conform cartii tehnice
+  realTemp *= 5;
+  realTemp -=0.5;
+  realTemp *=100;
+  
+  /*//delay(1000);
+  timp++;
+  
+  if(sec + timp == 60)
+  {
+    timp = 0;
+    sec = 0;
+    min++;
+  }
+  if(min == 60)
+  {
+   min = 0;
+   ora++;
+  }
+  if(ora == 24)
+  {
+    timp = 0;
+  	sec = 0;
+    min = 0;
+    ora = 0;
+  }*/
+  ///tema2///
+  
+  ///tema3
   volatile Buttons event = GetButtons();
   if (event != EV_NONE)
   {
@@ -425,6 +446,29 @@ void loop()
   
     print_menu(scroll_menu);
     delay(1000);
-
+  ///tema3///
+  ///tema4
+    eroare = setpoint - realTemp;
+    suma_erori= suma_erori + eroare * dt;
+    derivativa = (eroare - eroare_anterioara) / dt;
+    output = (kp * eroare) + (ki * suma_erori ) + (kd * derivativa);
+    eroare_anterioara = eroare;
+    
+  
+  //digitalWrite(10,5);
+  if(output > 40)////modific dupa ce inteleg formula!!!!!!!
+  {
+  digitalWrite(10,HIGH);
+  }
+  else if(output < 40)
+  {
+  digitalWrite(10,LOW);
+  }
+  else if(output > 40 && output <40)
+  {
+  digitalWrite(10, (output * 255)/5);  
+  }
+  ///tema4///
 }
+ 
  
