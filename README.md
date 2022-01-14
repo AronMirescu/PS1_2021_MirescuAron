@@ -35,10 +35,10 @@ LiquidCrystal lcd(12, 10, 5, 4, 3, 2);
 ///tema3
 int program = 0;
 int timpu = 10;
-int timpi = 0;
-int timpm = 0;
-int timpr = 0;
-double tempe = 36.6;
+int timpi = 10;
+int timpm = 10;
+int timpr = 10;
+double tempe = 36.6; //setpoint
 double kp = 1;
 double ki = 0.1;
 double kd = 0.1;
@@ -52,7 +52,6 @@ Menus current_menu =  MENU_MAIN;
  double eroare_anterioara = 0;
  double derivativa = 0;
  double dt = 0.1; // timp esantionare
- double setpoint = 30;
  double output = 0;
 ///team4///
 int temp;
@@ -63,9 +62,16 @@ int sec;
 int min;
 int ora;
 
-double process_temp;
+double process_temp = 0;
 
 ///tema3
+
+///tema5
+bool gen = false;
+float timpa = 0;
+float init_temp = 0;
+///tema5///
+
 void state_machine(enum Menus menu, enum Buttons button);
 Buttons GetButtons(void);
 void print_menu(enum Menus menu);
@@ -80,7 +86,66 @@ void print_menu(enum Menus menu)
   {
     case MENU_Start:
     	lcd.print("Start");
-    	//lcd.print(kp);
+    	if(gen)///testeaza daca a inceput procedura
+        {
+         lcd.setCursor(0, 0);
+         lcd.print("                ");
+         lcd.setCursor(0, 1);
+         lcd.print("                ");
+         
+         lcd.setCursor(0, 0);
+         if(secunde <= timpi)
+         {
+         lcd.print("Ti=");
+         lcd.print(timpi);
+         lcd.print("s");
+         }
+         else if(secunde <= timpi + timpm)
+         {
+         lcd.print("Tm=");
+         lcd.print(timpm);
+         lcd.print("s");
+         }
+         else if(secunde <= timpi+timpm+timpr+1)
+         {
+         lcd.print("Tr=");
+         lcd.print(timpr);
+         lcd.print("s");
+         }
+         lcd.print(" ");
+         lcd.print("Tset=");
+         lcd.print(tempe);
+          
+         lcd.setCursor(0, 1);
+         lcd.print("P");
+         lcd.print(program);
+         lcd.print("    ");
+         lcd.print("Temp=");
+         lcd.print(realTemp);
+         
+   ///tema4
+    eroare = tempe - realTemp;
+    suma_erori= suma_erori + eroare * dt;
+    derivativa = (eroare - eroare_anterioara) / dt;
+    output = (kp * eroare) + (ki * suma_erori ) + (kd * derivativa);
+    eroare_anterioara = eroare;
+  
+  if(output > 5)
+  {
+  OCR2A = 255;
+  }
+  else if(output < 0)
+  {
+  OCR2A = 0;
+  }
+  else
+  {
+  OCR2A =(int)((output * 255)/5);  
+  }
+          
+  heat_process1();
+  ///tema4///
+        }
     	break;
     case MENU_Alege:
     	lcd.print("Programul = ");
@@ -118,10 +183,10 @@ void print_menu(enum Menus menu)
     default:
    lcd.print("MENIU T=");
    
-  lcd.setCursor(6, 0);
+  //lcd.setCursor(6, 0);
   
   lcd.print(realTemp);
-  /*lcd.setCursor(12, 0);
+  lcd.setCursor(12, 0);
   lcd.print(String((char)178) + "C");//temperatura curenta  
   
   lcd.setCursor(0, 1);
@@ -140,15 +205,10 @@ void print_menu(enum Menus menu)
   lcd.print(":");
   
   lcd.setCursor(11, 1);
-  lcd.print(sec + timp);*/
-    
-    ///tema4
-    lcd.setCursor(0, 1);
-    lcd.print(output);
-    ///tema4///
+  lcd.print(sec + timp);
    		break;
   }
-  if(current_menu != MENU_MAIN)
+  if(current_menu != MENU_MAIN && current_menu != MENU_Start)
   {
   	lcd.setCursor(0,1);
   	lcd.print("modifica");
@@ -165,6 +225,13 @@ void go_home(void)
   scroll_menu = MENU_MAIN;
   current_menu = scroll_menu;
 }
+
+///tema5
+void start_proces(void)
+{
+  gen = true;
+}
+///tema5///
 
 void go_next(void)
 {
@@ -276,7 +343,7 @@ void dec_timpr(void)
 state_machine_handler_t* sm[MENU_MAX_NUM][EV_MAX_NUM] = 
 { //events: OK , CANCEL , NEXT, PREV
   {enter_menu, go_home, go_next, go_prev},  //MENU_MAIN
-  {go_home, go_home, go_next, go_prev},	//MENU_Start
+  {start_proces, go_home, go_next, go_prev},	//MENU_Start
   {go_home, go_home, inc_program, dec_program},	//MENU_Alege//
   {go_home, go_home, inc_temp, dec_temp,},	//MENU_TEMP//
   {go_home, go_home, inc_timpi, dec_timpi},	//MENU_Incal
@@ -350,77 +417,10 @@ void setup()
   ///tema5
   set_pwm();  
   ///tema5///
-  
-  /*lcd.begin(16, 2);
-  lcd.print("Temp: ");
-  
-  temp = 0;
-  realTemp = 0;
-  
-  timp = 0;
-  sec = 57;
-  min = 59;
-  ora = 23;*/
 }
 
 void loop() 
 {
-  /*lcd.print("                ");
-  temp = analogRead(0);
-  realTemp = (double)temp/1024; //convertire semanl analog in temperatura conform cartii tehnice
-  realTemp *= 5;
-  realTemp -=0.5;
-  realTemp *=100;
-  lcd.setCursor(6, 0);
-  
-  lcd.print(realTemp);
-  lcd.setCursor(12, 0);
-  lcd.print(String((char)178) + "C");
-  
-  lcd.setCursor(0, 1);
-  lcd.print("Ora: ");
-  
-  delay(1000);
-  timp++;
-  
-  if(sec + timp == 60)
-  {
-    timp = 0;
-    sec = 0;
-    min++;
-  }
-  if(min == 60)
-  {
-   min = 0;
-   ora++;
-  }
-  if(ora == 24)
-  {
-    timp = 0;
-  	sec = 0;
-    min = 0;
-    ora = 0;
-  }
-  
-  
-  lcd.setCursor(0, 1);
-  lcd.print("                ");
-  lcd.print("Ora: ");
-  
-  lcd.setCursor(5, 1);
-  lcd.print(ora);
-  
-  lcd.setCursor(7, 1);
-  lcd.print(":");
-  
-  lcd.setCursor(8, 1);
-  lcd.print(min);
-  
-  lcd.setCursor(10, 1);
-  lcd.print(":");
-  
-  lcd.setCursor(11, 1);
-  lcd.print(sec + timp);*/
   
   ///tema2
   temp = analogRead(0);
@@ -430,9 +430,14 @@ void loop()
   realTemp *=100;
   realTemp = realTemp + process_temp;
   
-  //delay(1000);
   timp++;
+  
+  if(gen)
+  {
   secunde++;
+  }
+  else
+    OCR2A = 0;
   
   if(sec + timp == 60)
   {
@@ -464,62 +469,48 @@ void loop()
     print_menu(scroll_menu);
     delay(1000);
   ///tema3///
-  ///tema4
-    eroare = setpoint - realTemp;
-    suma_erori= suma_erori + eroare * dt;
-    derivativa = (eroare - eroare_anterioara) / dt;
-    output = (kp * eroare) + (ki * suma_erori ) + (kd * derivativa);
-    eroare_anterioara = eroare;
-    
   
-  //digitalWrite(10,5);
-  if(output > 5)////modific dupa ce inteleg formula!!!!!!!
-  {
-  //digitalWrite(11,HIGH);
-  OCR2A = 255;
-  }
-  else if(output < 0)
-  {
-  //digitalWrite(11,LOW);
-  OCR2A = 0;
-  }
-  else
-  {
-  OCR2A =(int)((output * 255)/5);  
-  }
-  ///tema4///
 }
 
-void heat_process()
-{ 
-  float init_temp;
-  
+void heat_process1()
+{
   if(secunde==1)
     init_temp=realTemp;
 
   if(secunde <= timpi)
   {
-    process_temp=(setpoint-init_temp)*secunde/timpi;
-   // Serial.print("Incalzire:");
-   // Serial.print(init_temp+process_temp);
-   // Serial.print("\n");
+	process_temp=(tempe-init_temp)*secunde/timpi;
 
   }
   else if(secunde <= timpi + timpm)
   { 
-    temp = temp_q;
-   // Serial.print("Mentinere");
-    //Serial.print(init_temp+process_temp);
-   // Serial.print("\n");
+    if(realTemp < tempe)
+  {
+  process_temp=(tempe-init_temp)*secunde/timpi;
+  OCR2A = 255;
   }
-  else if(secunde <= timpi+timpm+timpr+1)
-  { 
-     float timp =(float)(timpi+timpm+timpr - secunde)/(timpr);
-     process_temp=process_temp*timp;
-     timpr=timpr-secunde;
-     //Serial.print("Racire");
-    // Serial.print(cooling_temp);
-     //Serial.print("\n");
+  else
+  {
+  OCR2A = 0;
+  }
 
   }
+  else if(secunde <= timpi+timpm+timpr+1)
+  {
+    
+    timpa =(float)(timpi+timpm+timpr - secunde)/(timpr);
+    process_temp=process_temp*timpa;
+    
+    if(realTemp < (tempe-init_temp)*secunde/timpr)
+    {
+      OCR2A = 255;
+    }
+    else
+    {
+       OCR2A = 0;
+    }
+
+  }
+  else
+    gen = false;
 }
