@@ -1,5 +1,3 @@
-# PS1_2021_MirescuAron
-
 
 #include <LiquidCrystal.h>
 ///tema3
@@ -33,7 +31,7 @@ enum Menus {
 
 
 ///tema3///
-LiquidCrystal lcd(12, 11, 5, 4, 3, 2);
+LiquidCrystal lcd(12, 10, 5, 4, 3, 2);
 ///tema3
 int program = 0;
 int timpu = 10;
@@ -44,7 +42,7 @@ double tempe = 36.6;
 double kp = 1;
 double ki = 0.1;
 double kd = 0.1;
-float temp_q = 0;
+float temp_q = 20;
 Menus scroll_menu = MENU_MAIN;
 Menus current_menu =  MENU_MAIN;
 ///tema3///
@@ -54,16 +52,18 @@ Menus current_menu =  MENU_MAIN;
  double eroare_anterioara = 0;
  double derivativa = 0;
  double dt = 0.1; // timp esantionare
- double setpoint = 20;
- double output;
+ double setpoint = 30;
+ double output = 0;
 ///team4///
 int temp;
 double realTemp;
-
+int secunde = 0;
 int timp;
 int sec;
 int min;
 int ora;
+
+double process_temp;
 
 ///tema3
 void state_machine(enum Menus menu, enum Buttons button);
@@ -118,10 +118,10 @@ void print_menu(enum Menus menu)
     default:
    lcd.print("MENIU T=");
    
-  /*lcd.setCursor(6, 0);
+  lcd.setCursor(6, 0);
   
   lcd.print(realTemp);
-  lcd.setCursor(12, 0);
+  /*lcd.setCursor(12, 0);
   lcd.print(String((char)178) + "C");//temperatura curenta  
   
   lcd.setCursor(0, 1);
@@ -316,6 +316,17 @@ Buttons GetButtons(void)
 }
 ///tema3///
 
+///tema5
+void set_pwm()
+{
+  TCCR2A |= (1 << WGM20) | (1 << WGM21); 
+  TCCR2B |= (1 << CS20) | (1 << CS21);
+  TCCR2A |= 1 << COM0A1;
+}
+
+
+///tema5///
+
 void setup() 
 {
 
@@ -332,9 +343,13 @@ void setup()
   digitalWrite(9, LOW); // pull-down
   
   ///tema4
-  pinMode(10, OUTPUT);
-  digitalWrite(10, LOW);
+  pinMode(11, OUTPUT);
+  digitalWrite(11, LOW);
   ///tema4///
+  
+  ///tema5
+  set_pwm();  
+  ///tema5///
   
   /*lcd.begin(16, 2);
   lcd.print("Temp: ");
@@ -413,9 +428,11 @@ void loop()
   realTemp *= 5;
   realTemp -=0.5;
   realTemp *=100;
+  realTemp = realTemp + process_temp;
   
-  /*//delay(1000);
+  //delay(1000);
   timp++;
+  secunde++;
   
   if(sec + timp == 60)
   {
@@ -434,7 +451,7 @@ void loop()
   	sec = 0;
     min = 0;
     ora = 0;
-  }*/
+  }
   ///tema2///
   
   ///tema3
@@ -456,19 +473,53 @@ void loop()
     
   
   //digitalWrite(10,5);
-  if(output > 40)////modific dupa ce inteleg formula!!!!!!!
+  if(output > 5)////modific dupa ce inteleg formula!!!!!!!
   {
-  digitalWrite(10,HIGH);
+  //digitalWrite(11,HIGH);
+  OCR2A = 255;
   }
-  else if(output < 40)
+  else if(output < 0)
   {
-  digitalWrite(10,LOW);
+  //digitalWrite(11,LOW);
+  OCR2A = 0;
   }
-  else if(output > 40 && output <40)
+  else
   {
-  digitalWrite(10, (output * 255)/5);  
+  OCR2A =(int)((output * 255)/5);  
   }
   ///tema4///
 }
- 
- 
+
+void heat_process()
+{ 
+  float init_temp;
+  
+  if(secunde==1)
+    init_temp=realTemp;
+
+  if(secunde <= timpi)
+  {
+    process_temp=(setpoint-init_temp)*secunde/timpi;
+   // Serial.print("Incalzire:");
+   // Serial.print(init_temp+process_temp);
+   // Serial.print("\n");
+
+  }
+  else if(secunde <= timpi + timpm)
+  { 
+    temp = temp_q;
+   // Serial.print("Mentinere");
+    //Serial.print(init_temp+process_temp);
+   // Serial.print("\n");
+  }
+  else if(secunde <= timpi+timpm+timpr+1)
+  { 
+     float timp =(float)(timpi+timpm+timpr - secunde)/(timpr);
+     process_temp=process_temp*timp;
+     timpr=timpr-secunde;
+     //Serial.print("Racire");
+    // Serial.print(cooling_temp);
+     //Serial.print("\n");
+
+  }
+}
